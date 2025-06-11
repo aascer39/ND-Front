@@ -9,7 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
-    UserManagement: typeof import('./src/view/admin/UserManagement.vue')['default']
-    UserTable: typeof import('./src/view/admin/UserTable.vue')['default']
+    UserManagement: typeof import('./src/views/admin/UserManagement.vue')['default']
+    UserTable: typeof import('./src/views/admin/UserTable.vue')['default']
   }
 }

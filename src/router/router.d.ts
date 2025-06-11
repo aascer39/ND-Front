@@ -1,4 +1,4 @@
-import { RouteRecordRaw } from 'vue-router'
+import {RouteMeta, RouteRecordRaw} from 'vue-router'
 
 declare module 'vue-router' {
     interface RouteMeta {
