@@ -1,21 +1,19 @@
 // src/api/types.ts
-
+// 存放各种借口
 /**
  * 用户信息接口
  */
 export interface User {
-    userId: number; // 从 id 修改为 userId
-    username: string; // 从 name 修改为 username
+    userId: number; 
+    username: string; 
     email: string;
-    status: string; // 从 number 修改为 string
+    status: string; 
     avatarUrl: string | null;
     registrationTs: string;
     lastLoginTs: string;
     storageQuotaBytes: number;
     usedStorageBytes: number;
     lastPasswordUpdateTs: string | null;
-    // passwordHash 通常不应该在前端处理，但为了类型完整可以加上
-    passwordHash?: string;
 }
 
 /**
@@ -53,4 +51,18 @@ export interface RegisterData {
     username: string;
     password: string;
     email: string;
+}
+
+/**
+ * 登录成功后的 API 响应数据结构
+ */
+export interface LoginResponse {
+    tokenName: string;
+    tokenValue: string;
+    loginId: number;
+    username: string;
+    status: string;
+    loginType: string;
+    loginDeviceType: string;
+    lastLoginTs: string;
 }

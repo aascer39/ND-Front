@@ -34,7 +34,6 @@ defineEmits<{
   (e: 'delete', user: User): void
 }>();
 
-// [新增] 用于格式化日期时间的辅助函数
 const formatDateTime = (row: User, column: any, cellValue: string) => {
   if (!cellValue) return '';
   return new Date(cellValue).toLocaleString();

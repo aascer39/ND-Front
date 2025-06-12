@@ -1,26 +1,17 @@
 import apiClient from '@/utils/request'; // 引入封装好的 axios 实例
-import type { User, LoginData, PaginatedUsers, RegisterData, UserPageQuery } from './types'; // 假设类型统一放在 types.ts 中
+import type { User, LoginData, PaginatedUsers, RegisterData, UserPageQuery, LoginResponse } from './types'; // 假设类型统一放在 types.ts 中
 
 /**
  * 管理员登录 API
  * @param data 包含用户名和密码的登录信息
- * @returns {Promise<string>} 返回一个 Promise，成功时解析为 Token 字符串
+ * @returns {Promise<LoginResponse>} 成功时解析为包含Token信息的对象
  */
-export const adminLogin = (data: LoginData): Promise<string> => {
+// 2. 更新函数的返回类型
+export const adminLogin = (data: LoginData): Promise<LoginResponse> => {
     return apiClient({
         url: '/admin/session',
         method: 'post',
         data,
-    });
-};
-/**
- * 获取当前登录的管理员信息
- * @returns {Promise<User>}
- */
-export const getUserInfo = (): Promise<User> => {
-    return apiClient({
-        url: '/admin/info', // 假设这是获取用户信息的API
-        method: 'get',
     });
 };
 
@@ -73,8 +64,19 @@ export const updateUser = (data: Partial<User> & { id: number }): Promise<User> 
 export const deleteUserById = (userId: number): Promise<void> => {
     return apiClient({
         // URL遵循RESTful风格，清晰地指向要操作的资源
-        url: `/admin/users/${userId}`,
+        url: `/users/deleteUser/${userId}`,
         // 使用 DELETE 方法，这是删除操作的标准HTTP动词
         method: 'delete',
+    });
+};
+
+/**
+ * [新增] 管理员登出 API
+ * @returns {Promise<void>}
+ */
+export const adminLogout = (): Promise<void> => {
+    return apiClient({
+        url: '/admin/logout',
+        method: 'post',
     });
 };

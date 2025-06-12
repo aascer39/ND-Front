@@ -64,39 +64,24 @@ import { ElMessage } from "element-plus";
 import type { FormInstance, FormRules } from "element-plus";
 import { User, Lock } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
-import axios from "axios"; // 需要先 npm install axios
-
-// 登录表单数据接口定义
-interface LoginForm {
-  username: string;
-  password: string;
-  rememberMe: boolean;
-}
-
-// 定义 LoginDTO 类型
-interface LoginDTO {
-  username: string;
-  password: string;
-}
+// 导入你的 store
+import { useUserStore } from "@/stores/admin";
 
 // 表单 DOM 引用
-// FormInstance 是 Element Plus 导出的表单实例类型
 const loginFormRef = ref<FormInstance>();
 
 // 加载状态
 const loading = ref<boolean>(false);
 
 // 登录表单的响应式数据
-// 使用 reactive 并传入接口类型
-const loginForm = reactive<LoginForm>({
+const loginForm = reactive({
   username: "",
   password: "",
-  rememberMe: false,
+  rememberMe: false, // 这是“记住我”复选框绑定的值
 });
 
 // 表单验证规则
-// FormRules 是 Element Plus 导出的表单规则类型
-const loginRules = reactive<FormRules<LoginForm>>({
+const loginRules = reactive<FormRules>({
   username: [
     { required: true, message: "请输入用户名", trigger: "blur" },
     { min: 3, max: 10, message: "长度在 3 到 10 个字符", trigger: "blur" },
@@ -109,38 +94,36 @@ const loginRules = reactive<FormRules<LoginForm>>({
 
 // 路由实例
 const router = useRouter();
+// 获取 store 实例
+const userStore = useUserStore();
 
 // 登录处理函数
-// 为传入的 formEl 参数指定类型 FormInstance | undefined
 const handleLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
 
   // 使用 await 等待 validate 方法的 Promise 结果
-  await formEl.validate(async (valid, fields) => {
+  await formEl.validate(async (valid) => {
     if (valid) {
       loading.value = true;
-      // 封装成 LoginDTO
-      const loginDTO: LoginDTO = {
-        username: loginForm.username,
-        password: loginForm.password,
-      };
       try {
-        // 发送给后端
-        const res = await axios.post("/api/admin/session", loginDTO);
-        if (res.data.code == 200) {
-          ElMessage.success("登录成功！");
-            router.push("/admin/home-page");
-          // 登录成功后跳转到首页
-        } else {
-          ElMessage.error(res.data.message || "用户名或密码错误！");
-        }
-      } catch (e) {
-        ElMessage.error("登录请求失败！");
+        // 调用 store 的 login action，并传入表单数据和 rememberMe 标志
+        await userStore.login(
+          {
+            username: loginForm.username,
+            password: loginForm.password,
+          },
+          loginForm.rememberMe
+        );
+
+        ElMessage.success("登录成功！");
+        router.push("/admin/home-page");
+      } catch (e: any) {
+        // 请求拦截器已经处理了错误消息的显示
+        console.error("登录失败:", e);
       } finally {
         loading.value = false;
       }
     } else {
-      console.log("校验失败:", fields);
       ElMessage.error("请检查输入项！");
     }
   });

@@ -16,7 +16,7 @@ const adminRoutes: AppRouteRecordRaw[] = [
       {
         path: 'user-management',
         name: 'UserManagement',
-        component: () => import('@/views/admin/UserManagement.vue'),
+        component: () => import('@/components/UserManagement.vue'),
         meta: { title: '用户管理', icon: 'User' }
       }
     ]

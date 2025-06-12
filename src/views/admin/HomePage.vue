@@ -6,7 +6,7 @@
 
 <script lang="ts" setup>
 
-import UserManagement from './UserManagement.vue';
+import UserManagement from '../../components/UserManagement.vue';
 
 </script>
 
