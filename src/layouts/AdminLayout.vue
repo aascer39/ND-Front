@@ -43,7 +43,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useUserStore } from '@/stores/admin';
+import { adminStore } from '@/stores/admin';
 import { storeToRefs } from 'pinia';
 import {
   Menu as IconMenu,
@@ -52,7 +52,7 @@ import {
 import { ElMessageBox } from 'element-plus';
 
 // 1. 获取 store 和 router 实例
-const userStore = useUserStore();
+const userStore = adminStore();
 const router = useRouter();
 const route = useRoute();
 

@@ -12,9 +12,8 @@ import {
 } from '@/api/admin';
 import type { User, LoginData, RegisterData, UserPageQuery, LoginResponse } from '@/api/types';
 
-export const useUserStore = defineStore('user', {
+export const adminStore = defineStore('user', {
     state: () => ({
-        // 初始化时，先检查 localStorage，再检查 sessionStorage
         token: localStorage.getItem('token') || sessionStorage.getItem('token') || null as string | null,
         userInfo: {} as Partial<User>,
         users: [] as User[],
@@ -25,36 +24,35 @@ export const useUserStore = defineStore('user', {
         },
         searchQuery: {
             nameKeyword: '',
-            status: null as number | null,
+            status: undefined as number | undefined,
             emailDomain: '',
+        },
+        // [已修正] 恢复为单个排序对象，以匹配后端能力
+        sort: {
+            prop: 'registrationTs',
+            order: 'descending' as 'ascending' | 'descending' | null
         },
         listLoading: false,
     }),
 
     actions: {
-        // 修改 login action，增加 rememberMe 参数
         async login(loginData: LoginData, rememberMe: boolean) {
             try {
-                // API 响应是一个包含 token 的对象
                 const response: LoginResponse = await adminLogin(loginData);
-                const token = response.tokenValue; // 提取 token 值
+                const token = response.tokenValue;
                 this.token = token;
 
-                // 根据 rememberMe 的值决定如何存储 token
                 if (rememberMe) {
                     localStorage.setItem('token', token);
                 } else {
                     sessionStorage.setItem('token', token);
                 }
 
-                // 2. 直接用登录响应的数据填充 userInfo
-                // 注意字段的映射，例如 loginId -> userId
                 this.userInfo = {
                     userId: response.loginId,
                     username: response.username,
                     status: response.status,
                     lastLoginTs: response.lastLoginTs,
-                    // 其他在 User 接口中但登录响应没有的字段会是 undefined
                 };
 
                 return Promise.resolve();
@@ -63,30 +61,40 @@ export const useUserStore = defineStore('user', {
             }
         },
 
-        // 更新 logout action
         async logout() {
             try {
                 await adminLogout();
                 this.token = null;
                 this.userInfo = {};
                 localStorage.removeItem('token');
-                sessionStorage.removeItem('token'); // 同时从 sessionStorage 中移除
+                sessionStorage.removeItem('token');
                 ElMessage.success('用户登出成功！');
             } catch (error) {
                 console.error("Failed to logout:", error);
             }
         },
 
+        // [已修正] 创建一个专门的 action 来处理单列排序
+        setSort(sortInfo: { prop: string, order: 'ascending' | 'descending' | null }) {
+            this.sort.prop = sortInfo.prop;
+            this.sort.order = sortInfo.order;
+            this.fetchUsers(); // 更新排序后立即重新获取数据
+        },
+
         async fetchUsers(query: Partial<UserPageQuery> = {}) {
             this.listLoading = true;
-            const isNewSearch = query.current === undefined;
             const params: UserPageQuery = {
-                current: isNewSearch ? 1 : (query.current || this.pagination.currentPage),
+                current: query.current || this.pagination.currentPage,
                 size: query.size || this.pagination.pageSize,
             };
             if (this.searchQuery.nameKeyword) params.nameKeyword = this.searchQuery.nameKeyword;
-            if (this.searchQuery.status !== null) params.status = this.searchQuery.status;
-            if (this.searchQuery.emailDomain) params.emailDomain = this.searchQuery.emailDomain;
+            if (this.searchQuery.status !== undefined) params.status = this.searchQuery.status;
+
+            // [已修正] 使用单一的 sort 对象来生成正确的排序参数
+            if (this.sort.prop && this.sort.order) {
+                params.sortField = this.sort.prop.replace(/([A-Z])/g, "_$1").toLowerCase();
+                params.sortOrder = this.sort.order === 'ascending' ? 'asc' : 'desc';
+            }
 
             try {
                 const response = await getUserList(params);
@@ -102,7 +110,9 @@ export const useUserStore = defineStore('user', {
         },
 
         resetSearchQuery() {
-            this.searchQuery = { nameKeyword: '', status: null, emailDomain: '' };
+            this.searchQuery = { nameKeyword: '', status: undefined, emailDomain: '' };
+            // [已修正] 重置为默认的单列排序
+            this.sort = { prop: 'registrationTs', order: 'descending' };
             this.fetchUsers({ current: 1 });
         },
 
@@ -118,7 +128,6 @@ export const useUserStore = defineStore('user', {
 
         async updateUser(userData: User) {
             try {
-                // 确保 userData 中包含 id 字段
                 if (!('id' in userData) || userData.id === undefined || userData.id === null) {
                     throw new Error('用户数据缺少 id 字段，无法更新');
                 }

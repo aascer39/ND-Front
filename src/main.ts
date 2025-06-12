@@ -17,6 +17,12 @@ const app = createApp(App);
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component);
 }
+const defaultTitle = 'MikuNetDisk'; // 设置一个默认标题
+router.beforeEach((to, from, next) => {
+    // to.meta.title 是你在路由配置中定义的标题
+    document.title = (to.meta.title as string) || defaultTitle;
+    next();
+});
 
 // 3. 在挂载应用前，使用插件
 app.use(pinia); // 注册 Pinia

@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import { ElMessage } from 'element-plus';
-import { useUserStore } from '@/stores/admin';
+import { adminStore } from '@/stores/admin';
 import router from '@/router'; // 导入 router 实例
 
 const instance = axios.create({
@@ -15,7 +15,7 @@ const instance = axios.create({
 instance.interceptors.request.use(
   config => {
     // 动态获取 user store
-    const userStore = useUserStore();
+    const userStore = adminStore();
     if (userStore.token) {
       config.headers['Authorization'] = `Bearer ${userStore.token}`;
     }
@@ -46,7 +46,7 @@ instance.interceptors.response.use(
           duration: 3 * 1000
         });
         // 2. 调用 store 的 logout 方法清空本地 token
-        const userStore = useUserStore();
+        const userStore = adminStore();
         userStore.logout();
         // 3. 跳转到登录页
         router.push('/admin/login');

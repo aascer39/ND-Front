@@ -5,7 +5,7 @@
         <el-card class="login-card" shadow="always">
           <template #header>
             <div class="card-header">
-              <h2>管理员登录</h2>
+              <h2>用户登录 (TypeScript)</h2>
             </div>
           </template>
 
@@ -19,7 +19,7 @@
             <el-form-item prop="username">
               <el-input
                 v-model="loginForm.username"
-                placeholder="请输入用户名"
+                placeholder="请输入用户名 (admin)"
                 :prefix-icon="User"
                 size="large"
               />
@@ -29,7 +29,7 @@
               <el-input
                 v-model="loginForm.password"
                 type="password"
-                placeholder="请输入密码"
+                placeholder="请输入密码 (123456)"
                 show-password
                 :prefix-icon="Lock"
                 size="large"

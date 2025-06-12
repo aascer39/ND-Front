@@ -31,8 +31,11 @@ export interface UserPageQuery {
     current?: number;
     size?: number;
     nameKeyword?: string;
-    status?: number | null; // 使用 null 或 undefined 表示不按此字段筛选
-    emailDomain?: string;
+    status?: number; // 使用 null 或 undefined 表示不按此字段筛选
+    // [新增] 排序字段
+    sortField?: string; 
+    // [新增] 排序顺序 ('asc' 或 'desc')
+    sortOrder?: String 
 }
 
 /**
