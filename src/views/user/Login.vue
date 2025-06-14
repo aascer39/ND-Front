@@ -1,60 +1,47 @@
 <template>
   <div class="login-container">
-    <el-row type="flex" justify="center" align="middle" style="height: 100vh">
-      <el-col :xs="22" :sm="16" :md="12" :lg="8" :xl="6">
-        <el-card class="login-card" shadow="always">
-          <template #header>
-            <div class="card-header">
-              <h2>用户登录 (TypeScript)</h2>
-            </div>
-          </template>
+    <div class="login-panel">
+      <div class="login-image-section">
+        <img src="/TheBirthofGramophoneLuka.jpg" alt="Login Illustration" />
+      </div>
+      <div class="login-form-section">
+        <div class="form-wrapper">
+          <h2 class="form-title">登录 MikuNetDisk</h2>
+          <p class="form-subtitle">欢迎回来，继续您的云端之旅</p>
 
-          <el-form
-            ref="loginFormRef"
-            :model="loginForm"
-            :rules="loginRules"
-            label-width="0px"
-            @keyup.enter="handleLogin"
-          >
-            <el-form-item prop="username">
-              <el-input
-                v-model="loginForm.username"
-                placeholder="请输入用户名 (admin)"
-                :prefix-icon="User"
-                size="large"
-              />
+          <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules" label-position="top"
+            @keyup.enter="handleLogin(loginFormRef)">
+            <el-form-item prop="username" label="用户名">
+              <el-input v-model="loginForm.username" placeholder="请输入您的用户名 (admin)" :prefix-icon="User" size="large" />
             </el-form-item>
 
-            <el-form-item prop="password">
-              <el-input
-                v-model="loginForm.password"
-                type="password"
-                placeholder="请输入密码 (123456)"
-                show-password
-                :prefix-icon="Lock"
-                size="large"
-              />
+            <el-form-item prop="password" label="密码">
+              <el-input v-model="loginForm.password" type="password" placeholder="请输入您的密码 (123456)" show-password
+                :prefix-icon="Lock" size="large" />
             </el-form-item>
 
-            <el-form-item>
+            <el-form-item class="options-item">
               <el-checkbox v-model="loginForm.rememberMe">记住我</el-checkbox>
+              <el-link type="primary" :underline="false">忘记密码？</el-link>
             </el-form-item>
 
             <el-form-item>
-              <el-button
-                type="primary"
-                style="width: 100%"
-                size="large"
-                :loading="loading"
-                @click="handleLogin(loginFormRef)"
-              >
-                登 录
+              <el-button class="login-button" type="primary" size="large" :loading="loading"
+                @click="handleLogin(loginFormRef)">
+                立即登录
               </el-button>
             </el-form-item>
           </el-form>
-        </el-card>
-      </el-col>
-    </el-row>
+
+          <div class="extra-links">
+            <span>还没有账户？</span>
+            <el-link type="primary" @click="goToRegister">立即注册</el-link>
+            <el-divider direction="vertical" />
+            <el-link type="info" @click="goToAdminLogin">管理员登录</el-link>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -82,14 +69,8 @@ const loginForm = reactive({
 
 // 表单验证规则
 const loginRules = reactive<FormRules>({
-  username: [
-    { required: true, message: "请输入用户名", trigger: "blur" },
-    { min: 3, max: 10, message: "长度在 3 到 10 个字符", trigger: "blur" },
-  ],
-  password: [
-    { required: true, message: "请输入密码", trigger: "blur" },
-    { min: 6, message: "密码长度不能少于6位", trigger: "blur" },
-  ],
+  username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
+  password: [{ required: true, message: "请输入密码", trigger: "blur" }],
 });
 
 // 路由实例
@@ -128,28 +109,138 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
     }
   });
 };
+
+const goToRegister = () => {
+  router.push("/register"); // 假设注册路由是 /register
+};
+
+// [!code focus start]
+/**
+ * 新增：跳转到管理员登录页
+ */
+const goToAdminLogin = () => {
+  // 根据路由配置，管理员登录页的路径是 /admin/login
+  router.push('/admin/login');
+};
+// [!code focus end]
 </script>
 
 <style scoped>
 .login-container {
-  background-color: #f0f2f5;
-  background-image: url("https://gw.alipayobjects.com/zos/rmsportal/TVYTbAXWheQpRcWDaDMu.svg");
-  background-repeat: no-repeat;
-  background-position: center 110px;
-  background-size: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 128px);
+  /* 减去页头页脚高度 */
+  background-color: #f7f8fa;
+  padding: 40px 20px;
 }
 
-.login-card {
-  border-radius: 12px;
+.login-panel {
+  display: flex;
+  width: 100%;
+  max-width: 960px;
+  min-height: 550px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
-.card-header {
+.login-image-section {
+  flex: 1;
+  display: none;
+  /* 在中小型屏幕上隐藏 */
+}
+
+.login-image-section img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-form-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.form-wrapper {
+  width: 100%;
+  max-width: 360px;
+}
+
+.form-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 12px;
   text-align: center;
 }
 
-.card-header h2 {
-  margin: 0;
-  font-size: 24px;
-  color: #333;
+.form-subtitle {
+  font-size: 16px;
+  color: #909399;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.options-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.login-button {
+  width: 100%;
+  font-size: 16px;
+  padding: 18px 20px;
+}
+
+.extra-links {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #606266;
+  display: flex;
+  /* 新增 */
+  justify-content: center;
+  /* 新增 */
+  align-items: center;
+  /* 新增 */
+}
+
+.extra-links .el-link {
+  vertical-align: baseline;
+}
+
+/* [!code focus start] */
+.extra-links .el-divider {
+  margin: 0 12px;
+  height: 1em;
+  /* 确保分割线高度合适 */
+}
+
+/* [!code focus end] */
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .login-image-section {
+    display: block;
+    /* 在大于768px的屏幕上显示图片 */
+  }
+}
+
+@media (max-width: 767px) {
+  .login-panel {
+    flex-direction: column;
+  }
+
+  .login-form-section {
+    padding: 30px 20px;
+  }
 }
 </style>

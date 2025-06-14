@@ -5,8 +5,8 @@
 
     <el-table-column prop="status" label="状态" width="100" align="center" sortable="custom">
       <template #default="scope">
-        <el-tag :type="scope.row.status === 'active' ? 'success' : 'danger'">
-          {{ scope.row.status === 'active' ? '正常' : '禁用' }}
+        <el-tag :type="getStatusTag(scope.row.status).type">
+          {{ getStatusTag(scope.row.status).text }}
         </el-tag>
       </template>
     </el-table-column>
@@ -38,16 +38,28 @@
       <template #default="scope">
         <el-dropdown @command="handleCommand($event, scope.row)" trigger="click">
           <el-button type="primary" link>
-            更多操作<el-icon class="el-icon--right"><arrow-down /></el-icon>
+            更多操作
+            <el-icon class="el-icon--right">
+              <arrow-down />
+            </el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="edit" :icon="Edit">
                 编辑用户
               </el-dropdown-item>
-              <el-dropdown-item command="reset_password" :icon="Key" disabled>
+              <el-dropdown-item command="reset_password" :icon="Key">
                 重置密码
               </el-dropdown-item>
+
+              <el-dropdown-item v-if="scope.row.status === 'active'" command="ban" :icon="CircleClose" divided>
+                封禁用户
+              </el-dropdown-item>
+
+              <el-dropdown-item v-if="scope.row.status === 'suspended'" command="unban" :icon="CircleCheck" divided>
+                解封用户
+              </el-dropdown-item>
+
               <el-dropdown-item command="delete" :icon="Delete" divided style="color: #f56c6c;">
                 删除用户
               </el-dropdown-item>
@@ -61,7 +73,8 @@
 
 <script setup lang="ts">
 import type { User } from '@/api/types';
-import { ArrowDown, Edit, Delete, Key } from '@element-plus/icons-vue';
+// 导入新增的图标
+import { ArrowDown, Edit, Delete, Key, CircleClose, CircleCheck } from '@element-plus/icons-vue';
 import { adminStore } from '@/stores/admin';
 
 defineProps<{
@@ -69,11 +82,16 @@ defineProps<{
   loading: boolean;
 }>();
 
+// 在 emits 中定义新的事件
 const emit = defineEmits<{
   (e: 'edit', user: User): void
   (e: 'delete', user: User): void
+  (e: 'ban', user: User): void
+  (e: 'unban', user: User): void
+  (e: 'reset_password', user: User): void
 }>();
 
+// 在 handleCommand 中处理新的命令
 const handleCommand = (command: string, user: User) => {
   switch (command) {
     case 'edit':
@@ -82,9 +100,15 @@ const handleCommand = (command: string, user: User) => {
     case 'delete':
       emit('delete', user);
       break;
+    case 'ban': // 触发 ban 事件
+      emit('ban', user);
+      break;
+    case 'unban': // 触发 unban 事件
+      emit('unban', user);
+      break;
     case 'reset_password':
       // 这里可以实现重置密码的逻辑
-      console.log('TODO: Reset password for user:', user.username);
+      emit('reset_password', user);
       break;
   }
 };
@@ -103,7 +127,10 @@ const handleSortChange = ({ prop, order }: { prop: string, order: 'ascending' | 
 /**
  * 根据最后登录时间计算用户活跃度状态
  */
-const getActivityStatus = (lastLoginTs: string | null): { type: 'success' | 'warning' | 'danger' | 'info', text: string } => {
+const getActivityStatus = (lastLoginTs: string | null): {
+  type: 'success' | 'warning' | 'danger' | 'info',
+  text: string
+} => {
   if (!lastLoginTs) {
     return { type: 'info', text: '新用户' };
   }
@@ -169,6 +196,19 @@ const getCustomColor = (percentage: number): string => {
     return '#f4b800'; // 黄色
   }
   return '#67c23a'; // 绿色
+};
+
+const getStatusTag = (status: string): { type: 'success' | 'danger' | 'info', text: string } => {
+  switch (status) {
+    case 'active':
+      return { type: 'success', text: '正常' };
+    case 'suspended':
+      return { type: 'danger', text: '禁用' };
+    case 'deleted':
+      return { type: 'info', text: '已删除' };
+    default:
+      return { type: 'info', text: '未知' };
+  }
 };
 </script>
 

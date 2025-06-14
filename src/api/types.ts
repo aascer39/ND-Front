@@ -4,10 +4,10 @@
  * 用户信息接口
  */
 export interface User {
-    userId: number; 
-    username: string; 
+    userId: number;
+    username: string;
     email: string;
-    status: string; 
+    status: string;
     avatarUrl: string | null;
     registrationTs: string;
     lastLoginTs: string;
@@ -31,11 +31,11 @@ export interface UserPageQuery {
     current?: number;
     size?: number;
     nameKeyword?: string;
-    status?: number; // 使用 null 或 undefined 表示不按此字段筛选
+    status?: string; // 使用 null 或 undefined 表示不按此字段筛选
     // [新增] 排序字段
-    sortField?: string; 
+    sortField?: string;
     // [新增] 排序顺序 ('asc' 或 'desc')
-    sortOrder?: String 
+    sortOrder?: String
 }
 
 /**
@@ -53,6 +53,16 @@ export interface PaginatedUsers {
 export interface RegisterData {
     username: string;
     password: string;
+    email: string;
+    // 是否使用哈希密码
+    needHash: boolean; 
+}
+
+/**
+ *管理员添加用户接口
+ */
+export interface adminAddUserData {
+    username: string;
     email: string;
 }
 

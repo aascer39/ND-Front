@@ -8,7 +8,7 @@ const adminRoutes: AppRouteRecordRaw[] = [
     meta: { requiresAuth: true, role: 'admin' },
     children: [
       {
-        path: 'home-page', 
+        path: 'home-page',
         name: 'AdminHomePage',
         component: () => import('@/views/admin/HomePage.vue'),
         meta: { title: '管理员首页', icon: 'Home' }
@@ -23,35 +23,48 @@ const adminRoutes: AppRouteRecordRaw[] = [
   }
 ];
 
-// // 用户界面路由
-// const userRoutes: AppRouteRecordRaw[] = [
-//     {
-//         path: '/',
-//         component: () => import('@/layouts/UserLayout.vue'), // 可自定义布局
-//         meta: { requiresAuth: true, role: 'user' },
-//         children: [
-//             {
-//                 path: 'home',
-//                 name: 'UserHome',
-//                 component: () => import('@/views/user/Home.vue'),
-//                 meta: { title: '用户首页', icon: 'Home' }
-//             },
-//             // 你可以继续添加更多用户页面
-//         ]
-//     }
-// ];
-
 // 公共路由
 const publicRoutes: AppRouteRecordRaw[] = [
   {
     path: '/',
-    name: 'redirect',
-    redirect: '/admin/login',
-    meta: { hidden: true }
+    component: () => import('@/layouts/PublicLayout.vue'),
+    meta: { requiresAuth: false },
+    children: [
+      {
+        path: '',
+        name: 'Home',
+        component: () => import('@/views/public/Home.vue'),
+        meta: { title: 'MikuNetDisk - 自由安全的云盘' }
+      },
+      {
+        path: 'login',
+        name: 'UserLogin',
+        component: () => import('@/views/user/Login.vue'),
+        meta: { title: '用户登录' }
+      },
+      // [!code focus start]
+      // 新增：用户注册页面的路由
+      {
+        path: 'register',
+        name: 'UserRegister',
+        component: () => import('@/views/user/Register.vue'),
+        meta: { title: '用户注册' }
+      },
+      // [!code focus end]
+      // [!code focus start]
+      // 新增：应用下载页面的路由
+      {
+        path: 'app-download', // 定义URL路径
+        name: 'AppDownload',
+        component: () => import('@/views/public/AppDownload.vue'),
+        meta: { title: '应用下载' }
+      }
+      // [!code focus end]
+    ]
   },
   {
     path: '/admin/login',
-    name: 'Login',
+    name: 'AdminLogin',
     component: () => import('@/views/admin/Login.vue'),
     meta: { hidden: true }
   },
@@ -65,7 +78,6 @@ const publicRoutes: AppRouteRecordRaw[] = [
 
 const routes: AppRouteRecordRaw[] = [
   ...adminRoutes,
-  // ...userRoutes,
   ...publicRoutes
 ];
 

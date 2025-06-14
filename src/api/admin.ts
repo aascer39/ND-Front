@@ -1,5 +1,5 @@
 import apiClient from '@/utils/request'; // 引入封装好的 axios 实例
-import type { User, LoginData, PaginatedUsers, RegisterData, UserPageQuery, LoginResponse } from './types'; // 假设类型统一放在 types.ts 中
+import type { User, LoginData, PaginatedUsers, RegisterData, UserPageQuery, LoginResponse, adminAddUserData } from './types'; // 假设类型统一放在 types.ts 中
 
 /**
  * 管理员登录 API
@@ -30,15 +30,35 @@ export const getUserList = (params: UserPageQuery): Promise<PaginatedUsers> => {
 
 /**
  * 注册新用户
- * 注意：根据您的文档，这是一个 GET 请求
+ * 注意：根据您的文档，这是一个 post 请求
  * @param data 包含用户名、密码和邮箱的注册信息
  * @returns {Promise<any>}
  */
 export const registerUser = (data: RegisterData): Promise<any> => {
     return apiClient({
         url: '/users/register',
-        method: 'get',
-        params: data,
+        method: 'post',
+        // [!code focus start]
+        // 遵循 RESTful 实践，POST 请求的数据应放在 data 中
+        data,
+        // [!code focus end]
+    });
+};
+
+/**
+ * 管理员注册新用户
+ * 注意：根据您的文档，这是一个 post 请求
+ * @param data 包含用户名、密码和邮箱的注册信息
+ * @returns {Promise<any>}
+ */
+export const adminAddUser = (data: adminAddUserData): Promise<any> => {
+    return apiClient({
+        url: '/admin/addUser',
+        method: 'post',
+        // [!code focus start]
+        // 遵循 RESTful 实践，POST 请求的数据应放在 data 中
+        data,
+        // [!code focus end]
     });
 };
 
@@ -48,7 +68,7 @@ export const registerUser = (data: RegisterData): Promise<any> => {
  * @param data 包含用户ID和需要更新的字段的对象
  * @returns {Promise<User>} 返回更新后的用户信息
  */
-export const updateUser = (data: Partial<User> & { id: number }): Promise<User> => {
+export const updateUser = (data: Partial<User> & { userId: number }): Promise<User> => {
     return apiClient({
         url: '/users/updateUser',
         method: 'put',
@@ -78,5 +98,41 @@ export const adminLogout = (): Promise<void> => {
     return apiClient({
         url: '/admin/logout',
         method: 'post',
+    });
+};
+
+/**
+ * [新增] 封禁指定用户 (管理员操作)
+ * @param userId 需要被封禁的用户的ID
+ * @returns {Promise<void>}
+ */
+export const banUserById = (userId: number): Promise<void> => {
+    return apiClient({
+        // 请根据您的后端API实际情况修改URL
+        url: `/admin/suspendUser/${userId}`,
+        method: 'patch',
+    });
+};
+
+/**
+ * [新增] 解封指定用户 (管理员操作)
+ * @param userId 需要被解封的用户的ID
+ * @returns {Promise<void>}
+ */
+export const unbanUserById = (userId: number): Promise<void> => {
+    return apiClient({
+        url: `/admin/unsuspendUser/${userId}`,
+        method: 'patch',
+    });
+};
+/**
+ * [新增] 重置指定指定用户密码 (管理员操作)
+ * @param userId 需要被重置的用户的ID
+ * @returns {Promise<void>}
+ */
+export const resetUserPassword = (userId: number): Promise<void> => {
+    return apiClient({
+        url: `/admin/resetPassword/${userId}`,
+        method: 'patch',
     });
 };

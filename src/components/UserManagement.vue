@@ -9,8 +9,8 @@
         <el-form-item label="状态">
           <el-radio-group v-model="searchQuery.status" @change="handleSearch">
             <el-radio-button :label="undefined">全部</el-radio-button>
-            <el-radio-button :label="1">正常</el-radio-button>
-            <el-radio-button :label="0">禁用</el-radio-button>
+            <el-radio-button label="active">正常</el-radio-button>
+            <el-radio-button label="suspended">禁用</el-radio-button>
           </el-radio-group>
         </el-form-item>
 
@@ -25,7 +25,8 @@
       <el-button type="primary" :icon="Plus" @click="handleAdd">新增用户</el-button>
     </div>
 
-    <UserTable :users="users" :loading="listLoading" @edit="handleEdit" @delete="handleDelete" class="user-table" />
+    <UserTable :users="users" :loading="listLoading" @edit="handleEdit" @delete="handleDelete" @ban="handleBan"
+      @unban="handleUnban" @reset_password="handleResetPassword" class="user-table" />
 
     <div class="pagination-container" v-if="pagination.total > 0">
       <el-pagination :current-page="pagination.currentPage" :page-size="pagination.pageSize" :total="pagination.total"
@@ -39,11 +40,11 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from "vue";
-import { adminStore } from "@/stores/admin";
-import type { User, RegisterData } from "@/api/types";
-import { storeToRefs } from "pinia";
-import { ElMessageBox } from "element-plus";
-import { Search, Refresh, Plus } from "@element-plus/icons-vue";
+import { adminStore } from "@/stores/admin"; //
+import type { User, adminAddUserData } from "@/api/types"; //
+import { storeToRefs } from "pinia"; //
+import { ElMessageBox } from "element-plus"; //
+import { Search, Refresh, Plus } from "@element-plus/icons-vue"; //
 
 // 组件导入
 import UserTable from '@/views/admin/UserTable.vue';
@@ -94,33 +95,83 @@ const handleEdit = (user: User) => {
   dialogVisible.value = true;
 };
 
-const handleSave = (userData: Partial<User> | RegisterData) => {
-  if (isEditMode.value) {
-    if ('userId' in userData && typeof userData.userId === 'number') {
-      userStore.updateUser(userData as User);
-    } else {
-      console.error('编辑用户时缺少 userId');
-    }
+const handleSave = (userData: Partial<User> | adminAddUserData) => { //
+  if (isEditMode.value) { //
+    // 编辑模式
+    userStore.updateUser(userData as User);
   } else {
-    if ('username' in userData && 'password' in userData && 'email' in userData) {
-      userStore.addUser(userData as RegisterData);
-    } else {
-      console.error('用于创建的用户数据不正确');
-    }
+    // 新增模式，调用新的 action
+    userStore.adminAddUser(userData as adminAddUserData);
   }
 };
 
-const handleDelete = (user: User) => {
-  ElMessageBox.confirm(`您确定要删除用户 ${user.username} 吗?`, "警告", {
+const handleDelete = (user: User) => { //
+  ElMessageBox.confirm(`您确定要删除用户 ${user.username} 吗?`, "警告", { //
     confirmButtonText: "确定",
     cancelButtonText: "取消",
     type: "warning",
   }).then(() => {
-    if (user.userId) {
+    if (user.userId) { //
       userStore.deleteUser(user.userId);
     }
   });
 };
+
+/**
+ * [已修改] 处理封禁用户的操作
+ * @param user 从 UserTable 组件传来的用户对象
+ */
+const handleBan = (user: User) => {
+  ElMessageBox.confirm(`确定要封禁用户 “${user.username}” 吗？`, "封禁确认", {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(() => {
+    // 调用 store 中的 banUser action，并传递 userId [!code focus]
+    userStore.banUser(user.userId);
+  }).catch(() => {
+    // 用户取消操作，无需处理
+  });
+};
+
+/**
+ * [已修改] 处理解封用户的操作
+ * @param user 从 UserTable 组件传来的用户对象
+ */
+const handleUnban = (user: User) => {
+  ElMessageBox.confirm(`确定要解封用户 “${user.username}” 吗？`, "解封确认", {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'success',
+  }).then(() => {
+    userStore.unbanUser(user.userId);
+  }).catch(() => {
+    // 用户取消操作，无需处理
+  });
+};
+/**
+ * [已修改] 重置密码操作
+ * @param user 从 UserTable 组件传来的用户对象
+ */
+const handleResetPassword = (user: User) => {
+  ElMessageBox.confirm(`确定要重置用户 “${user.username}” 密码吗？`, "重置密码确认", {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'success',
+  }).then(() => {
+    userStore.resetPassword(user.userId).then(() => {
+
+    }).catch((error: any) => {
+      ElMessageBox.alert(`密码重置失败: ${error.message}`, "错误", {
+        confirmButtonText: '确定',
+        type: 'error',
+      });
+    });
+  }).catch(() => {
+    // 用户取消操作，无需处理
+  });
+};
+
 </script>
 
 <style scoped>

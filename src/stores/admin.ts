@@ -2,15 +2,20 @@
 
 import { defineStore } from 'pinia';
 import { ElMessage } from 'element-plus';
+import CryptoJS from 'crypto-js';
 import {
     adminLogin,
     getUserList,
     registerUser,
     updateUser,
     deleteUserById,
-    adminLogout
+    adminLogout,
+    adminAddUser,
+    banUserById,
+    unbanUserById,
+    resetUserPassword
 } from '@/api/admin';
-import type { User, LoginData, RegisterData, UserPageQuery, LoginResponse } from '@/api/types';
+import type { User, LoginData, RegisterData, UserPageQuery, LoginResponse, adminAddUserData } from '@/api/types';
 
 export const adminStore = defineStore('user', {
     state: () => ({
@@ -24,7 +29,7 @@ export const adminStore = defineStore('user', {
         },
         searchQuery: {
             nameKeyword: '',
-            status: undefined as number | undefined,
+            status: undefined as string | undefined,
             emailDomain: '',
         },
         // [已修正] 恢复为单个排序对象，以匹配后端能力
@@ -116,22 +121,45 @@ export const adminStore = defineStore('user', {
             this.fetchUsers({ current: 1 });
         },
 
-        async addUser(userData: RegisterData) {
+        // [!code focus start]
+        /**
+         * 管理员添加用户，只传 username 和 email
+         * @param userData 
+         */
+        async adminAddUser(userData: adminAddUserData) {
             try {
-                await registerUser(userData);
-                ElMessage.success('新增用户成功！');
+                await adminAddUser(userData); // 调用 adminAddUser API
+                ElMessage.success('新增用户成功，用户的随机密码通过邮箱发送给了用户！');
                 await this.fetchUsers({ current: 1 });
             } catch (error) {
                 console.error("Failed to add user:", error);
             }
         },
+        // [!code focus end]
 
-        async updateUser(userData: User) {
+        // [!code focus start]
+        /**
+         * 用户自行注册，密码由前端加密
+         * @param userData 包含 username, email, password (加密后)
+         */
+        async selfRegisterUser(userData: RegisterData) {
             try {
-                if (!('id' in userData) || userData.id === undefined || userData.id === null) {
-                    throw new Error('用户数据缺少 id 字段，无法更新');
+                await registerUser(userData);
+                ElMessage.success('注册成功！请登录。');
+                return Promise.resolve(); // 返回成功状态
+            } catch (error) {
+                console.error("Failed to register user:", error);
+                return Promise.reject(error); // 返回失败状态
+            }
+        },
+
+        async updateUser(userData: Partial<User>) {
+            try {
+                // 检查正确的属性名：userId
+                if (!userData.userId) {
+                    throw new Error('用户数据缺少 userId 字段，无法更新');
                 }
-                await updateUser({ ...userData, id: Number(userData.id) });
+                await updateUser(userData as Partial<User> & { userId: number });
                 ElMessage.success('更新用户成功！');
                 await this.fetchUsers();
             } catch (error) {
@@ -152,5 +180,44 @@ export const adminStore = defineStore('user', {
                 console.error("Failed to delete user:", error);
             }
         },
+        /**
+         * [新增] 封禁用户 Action
+         * @param userId 
+         */
+        async banUser(userId: number) {
+            try {
+                await banUserById(userId); // 调用新的 banUserById API
+                ElMessage.success('封禁用户成功！');
+                // 操作成功后，重新获取用户列表以刷新界面
+                await this.fetchUsers();
+            } catch (error) {
+                console.error("Failed to ban user:", error);
+                // 错误消息已由 request.ts 中的拦截器统一处理
+            }
+        },
+
+        /**
+         * [新增] 解封用户 Action
+         * @param userId 
+         */
+        async unbanUser(userId: number) {
+            try {
+                await unbanUserById(userId); // 调用新的 unbanUserById API
+                ElMessage.success('解封用户成功！');
+                await this.fetchUsers();
+            } catch (error) {
+                console.error("Failed to unban user:", error);
+            }
+        },
+        async resetPassword(userId: number) {
+            try {
+                await resetUserPassword(userId);
+                ElMessage.success('重置密码成功！');
+                // 操作成功后，重新获取用户列表以刷新界面
+                await this.fetchUsers();
+            } catch (error) {
+                console.error("重置密码失败", error);
+            }
+        }
     },
 });

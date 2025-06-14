@@ -8,9 +8,6 @@
             <el-form-item label="邮箱" prop="email">
                 <el-input v-model="formData.email" placeholder="请输入邮箱" />
             </el-form-item>
-            <el-form-item v-if="!isEdit" label="密码" prop="password">
-                <el-input v-model="formData.password" type="password" placeholder="请输入密码" show-password />
-            </el-form-item>
         </el-form>
         <template #footer>
             <div class="dialog-footer">
@@ -24,7 +21,9 @@
 <script lang="ts" setup>
 import { ref, watch, computed } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
-import type { User, RegisterData } from '@/api/types';
+// [!code focus start]
+import type { User, adminAddUserData } from '@/api/types';
+// [!code focus end]
 
 // 1. Props 定义 (保持不变)
 const props = defineProps<{
@@ -36,36 +35,38 @@ const props = defineProps<{
 // 2. Emits 定义 (修正了 save 事件的类型)
 const emit = defineEmits<{
     (e: 'update:visible', value: boolean): void;
-    (e: 'save', data: Partial<User> | RegisterData): void; // 类型更精确
+    // [!code focus start]
+    // save 事件现在会发出两种不同的数据结构
+    (e: 'save', data: Partial<User> | adminAddUserData): void;
+    // [!code focus end]
 }>();
 
 // 3. 本地状态
 const formRef = ref<FormInstance | null>(null);
 
-// [修正] 表单数据结构与 API 类型对齐
-type FormData = Pick<User, 'username' | 'email'> & { password?: string };
+// [!code focus start]
+// [修正] 表单数据结构不再包含密码
+type FormData = Pick<User, 'username' | 'email'>;
 const createEmptyForm = (): FormData => ({
     username: '',
     email: '',
-    password: '',
 });
+// [!code focus end]
 const formData = ref<FormData>(createEmptyForm());
 
 // 4. 计算属性 (保持不变)
 const dialogTitle = computed(() => (props.isEdit ? '编辑用户' : '新增用户'));
 
-// 5. [新增] 表单验证规则
+// [!code focus start]
+// 5. [修正] 表单验证规则，移除密码校验
 const formRules = computed<FormRules>(() => ({
     username: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
     email: [
         { required: true, message: '请输入邮箱', trigger: 'blur' },
         { type: 'email', message: '请输入正确的邮箱格式', trigger: ['blur', 'change'] },
     ],
-    password: [
-        { required: !props.isEdit, message: '请输入密码', trigger: 'blur' },
-        { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
-    ],
 }));
+// [!code focus end]
 
 
 // 6. [优化] 监听器逻辑
