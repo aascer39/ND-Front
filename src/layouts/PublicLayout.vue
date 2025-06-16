@@ -13,8 +13,30 @@
         </el-menu>
 
         <div class="right-menu">
-          <el-button type="default" round @click="goToLogin">登录</el-button>
-          <el-button type="primary" round @click="goToRegister">立即注册</el-button>
+          <template v-if="!userStore.token">
+            <el-button type="default" round @click="goToLogin">登录</el-button>
+            <el-button type="primary" round @click="goToRegister">立即注册</el-button>
+          </template>
+
+          <template v-else>
+            <el-dropdown @command="handleCommand" trigger="click">
+              <span class="el-dropdown-link">
+                {{ userInfo.username ? userInfo.username : '用户' }}
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="dashboard" v-if="userInfo.role === 'admin'">
+                    后台管理
+                  </el-dropdown-item>
+                  
+                  <el-dropdown-item command="logout" :divided="userInfo.role === 'admin'">
+                    退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+              </el-dropdown>
+          </template>
         </div>
       </div>
     </el-header>
@@ -37,36 +59,41 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useRoute, useRouter, type Router } from 'vue-router';
+import { adminStore } from '@/stores/admin'; // 引入 adminStore
+import { storeToRefs } from 'pinia';
+import { ArrowDown } from '@element-plus/icons-vue';
+const userStore = adminStore(); // 获取 userStore 实例
 
-// 获取 router 实例，其类型由 vue-router 自动推断
 const router: Router = useRouter();
-
-// 获取当前路由信息 route，其类型由 vue-router 自动推断
 const route = useRoute();
 
-// activeMenu 的类型被 TypeScript 自动推断为 ComputedRef<string>
-// 它会根据当前路由路径动态更新，用于高亮导航菜单
 const activeMenu = computed(() => {
-  // route.path 的类型是 string
   const { path } = route;
   return path;
 });
 
-// 定义跳转到首页的函数
 const goToHome = (): void => {
   router.push('/');
 }
 
-// 定义跳转到登录页的函数
 const goToLogin = (): void => {
   router.push('/login');
 };
 
-// 定义跳转到注册页的函数
 const goToRegister = (): void => {
-  // 假设 /register 路由存在
   router.push('/register');
 };
+
+const handleCommand = (command: string) => {
+  if (command === 'logout') {
+    userStore.logout();
+    router.push('/'); 
+  } else if (command === 'dashboard') {
+    router.push('/admin/home-page');
+  }
+};
+
+const { userInfo } = storeToRefs(userStore);
 </script>
 
 <style scoped>
@@ -75,7 +102,6 @@ const goToRegister = (): void => {
   flex-direction: column;
   min-height: 100vh;
   background-color: #f7f8fa;
-  /* A light background for the page */
 }
 
 .page-header {
@@ -142,13 +168,21 @@ const goToRegister = (): void => {
   display: flex;
   align-items: center;
   gap: 16px;
-  /* Spacing between buttons */
 }
+
+/* [!code focus start] */
+.el-dropdown-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--el-color-primary);
+  font-size: 16px;
+}
+/* [!code focus end] */
 
 .page-main {
   flex-grow: 1;
   padding-top: 84px;
-  /* Header height + some spacing */
   padding-bottom: 40px;
 }
 

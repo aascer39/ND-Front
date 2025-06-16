@@ -136,3 +136,14 @@ export const resetUserPassword = (userId: number): Promise<void> => {
         method: 'patch',
     });
 };
+/**
+ * [新增] 根据管理员ID获取其详细信息
+ * @param adminId 管理员的用户ID
+ * @returns {Promise<User>} 成功时解析为完整的用户信息对象
+ */
+export const getAdminInfoById = (adminId: number): Promise<User> => {
+    return apiClient({
+        url: `/admin/getAdminInfo/${adminId}`, // 使用您提供的接口地址
+        method: 'get',
+    });
+};

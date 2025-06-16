@@ -19,4 +19,8 @@
     "src/**/*.d.ts",
     "src/**/*.vue"
   ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

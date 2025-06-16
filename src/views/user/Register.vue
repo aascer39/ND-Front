@@ -43,7 +43,7 @@
                 </div>
             </div>
              <div class="register-image-section">
-                 <img src="/TheBirthofGramophoneLuka.jpg" alt="Register Illustration" />
+                 <img src="/glow.jpg" alt="Register Illustration" />
              </div>
         </div>
     </div>

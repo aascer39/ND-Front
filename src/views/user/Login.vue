@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-panel">
       <div class="login-image-section">
-        <img src="/TheBirthofGramophoneLuka.jpg" alt="Login Illustration" />
+        <img src="/FrostFlower.jpg" alt="Login Illustration" />
       </div>
       <div class="login-form-section">
         <div class="form-wrapper">

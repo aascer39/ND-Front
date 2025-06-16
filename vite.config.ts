@@ -6,7 +6,6 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { codeInspectorPlugin } from "code-inspector-plugin";
 import * as path from "node:path";
 
-// 处理 code-inspector-plugin 的 TS 类型
 type CodeInspectorPlugin = (options: { bundler: 'vite' | 'webpack' }) => any
 
 export default defineConfig({

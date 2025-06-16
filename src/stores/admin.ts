@@ -2,7 +2,6 @@
 
 import { defineStore } from 'pinia';
 import { ElMessage } from 'element-plus';
-import CryptoJS from 'crypto-js';
 import {
     adminLogin,
     getUserList,
@@ -13,14 +12,28 @@ import {
     adminAddUser,
     banUserById,
     unbanUserById,
-    resetUserPassword
+    resetUserPassword,
+    getAdminInfoById
 } from '@/api/admin';
-import type { User, LoginData, RegisterData, UserPageQuery, LoginResponse, adminAddUserData } from '@/api/types';
+import type {
+    User,
+    LoginData,
+    RegisterData,
+    UserPageQuery,
+    LoginResponse,
+    adminAddUserData
+} from '@/api/types';
+
+// 定义在 localStorage 中存储的键
+const USER_INFO_KEY = 'user-info';
+const TOKEN_KEY = 'token';
 
 export const adminStore = defineStore('user', {
     state: () => ({
-        token: localStorage.getItem('token') || sessionStorage.getItem('token') || null as string | null,
-        userInfo: {} as Partial<User>,
+        // [关键修复] token 和 userInfo 都从 localStorage 初始化
+        token: localStorage.getItem(TOKEN_KEY) || null,
+        userInfo: JSON.parse(localStorage.getItem(USER_INFO_KEY) || '{}') as Partial<User>,
+        
         users: [] as User[],
         pagination: {
             currentPage: 1,
@@ -32,7 +45,6 @@ export const adminStore = defineStore('user', {
             status: undefined as string | undefined,
             emailDomain: '',
         },
-        // [已修正] 恢复为单个排序对象，以匹配后端能力
         sort: {
             prop: 'registrationTs',
             order: 'descending' as 'ascending' | 'descending' | null
@@ -47,18 +59,21 @@ export const adminStore = defineStore('user', {
                 const token = response.tokenValue;
                 this.token = token;
 
-                if (rememberMe) {
-                    localStorage.setItem('token', token);
-                } else {
-                    sessionStorage.setItem('token', token);
-                }
-
+                // 将完整的用户信息对象存入 state
                 this.userInfo = {
                     userId: response.loginId,
+                    role: response.loginType,
                     username: response.username,
                     status: response.status,
                     lastLoginTs: response.lastLoginTs,
                 };
+                
+                // [关键修复] 根据 rememberMe 选择 localStorage 或 sessionStorage
+                const storage = rememberMe ? localStorage : sessionStorage;
+
+                // 将 token 和 userInfo 对象都存入选择的 storage
+                storage.setItem(TOKEN_KEY, token);
+                storage.setItem(USER_INFO_KEY, JSON.stringify(this.userInfo));
 
                 return Promise.resolve();
             } catch (error) {
@@ -68,14 +83,50 @@ export const adminStore = defineStore('user', {
 
         async logout() {
             try {
-                await adminLogout();
+                if (this.token) {
+                    await adminLogout();
+                }
+            } catch (error) {
+                console.error("Backend logout failed, proceeding with frontend cleanup:", error);
+            } finally {
+                // [关键修复] 清理 state 和所有本地存储
                 this.token = null;
                 this.userInfo = {};
-                localStorage.removeItem('token');
-                sessionStorage.removeItem('token');
-                ElMessage.success('用户登出成功！');
-            } catch (error) {
-                console.error("Failed to logout:", error);
+                localStorage.removeItem(TOKEN_KEY);
+                sessionStorage.removeItem(TOKEN_KEY);
+                localStorage.removeItem(USER_INFO_KEY);
+                sessionStorage.removeItem(USER_INFO_KEY);
+
+                ElMessage.success('登出成功！');
+            }
+        },
+        
+
+        // [新增] 获取当前登录用户信息 (用于刷新页面后恢复状态)
+        async fetchCurrentUserInfo() {
+            // 如果 state 中已经有 userId，说明状态是完整的，无需重新获取
+            if (this.userInfo.userId) {
+                return Promise.resolve();
+            }
+            // 如果 state 中没有用户信息但有 token，说明可能刚刷新页面，需要根据 token 去后端获取
+            if (this.token) {
+                try {
+                    // 这里假设你有一个通过 token 获取用户信息的接口
+                    // 如果没有，可以沿用之前的 getAdminInfoById，但需要 loginId
+                    // const info = await getInfoByToken(); 
+                    // this.userInfo = info;
+
+                    // 注意：如果刷新后没有保留 loginId，则无法调用 getAdminInfoById
+                    // 所以最好的做法是在登录时把整个 userInfo 对象存起来
+                    // 此函数现在主要用作一个“守卫”，确保状态一致性
+                    console.log("State restored from localStorage. User:", this.userInfo.username);
+
+                } catch (error) {
+                    console.error("Failed to fetch user info by token, logging out.", error);
+                    // 获取信息失败（如token失效），则执行登出
+                    await this.logout();
+                    return Promise.reject(error);
+                }
             }
         },
 
@@ -95,7 +146,6 @@ export const adminStore = defineStore('user', {
             if (this.searchQuery.nameKeyword) params.nameKeyword = this.searchQuery.nameKeyword;
             if (this.searchQuery.status !== undefined) params.status = this.searchQuery.status;
 
-            // [已修正] 使用单一的 sort 对象来生成正确的排序参数
             if (this.sort.prop && this.sort.order) {
                 params.sortField = this.sort.prop.replace(/([A-Z])/g, "_$1").toLowerCase();
                 params.sortOrder = this.sort.order === 'ascending' ? 'asc' : 'desc';
@@ -116,46 +166,33 @@ export const adminStore = defineStore('user', {
 
         resetSearchQuery() {
             this.searchQuery = { nameKeyword: '', status: undefined, emailDomain: '' };
-            // [已修正] 重置为默认的单列排序
             this.sort = { prop: 'registrationTs', order: 'descending' };
             this.fetchUsers({ current: 1 });
         },
 
-        // [!code focus start]
-        /**
-         * 管理员添加用户，只传 username 和 email
-         * @param userData 
-         */
         async adminAddUser(userData: adminAddUserData) {
             try {
-                await adminAddUser(userData); // 调用 adminAddUser API
+                await adminAddUser(userData);
                 ElMessage.success('新增用户成功，用户的随机密码通过邮箱发送给了用户！');
                 await this.fetchUsers({ current: 1 });
             } catch (error) {
                 console.error("Failed to add user:", error);
             }
         },
-        // [!code focus end]
 
-        // [!code focus start]
-        /**
-         * 用户自行注册，密码由前端加密
-         * @param userData 包含 username, email, password (加密后)
-         */
         async selfRegisterUser(userData: RegisterData) {
             try {
                 await registerUser(userData);
                 ElMessage.success('注册成功！请登录。');
-                return Promise.resolve(); // 返回成功状态
+                return Promise.resolve();
             } catch (error) {
                 console.error("Failed to register user:", error);
-                return Promise.reject(error); // 返回失败状态
+                return Promise.reject(error);
             }
         },
 
         async updateUser(userData: Partial<User>) {
             try {
-                // 检查正确的属性名：userId
                 if (!userData.userId) {
                     throw new Error('用户数据缺少 userId 字段，无法更新');
                 }
@@ -164,6 +201,21 @@ export const adminStore = defineStore('user', {
                 await this.fetchUsers();
             } catch (error) {
                 console.error("Failed to update user:", error);
+            }
+        },
+
+        // 保留了 fetchUserInfo，但现在它的主要作用是校验，因为信息已从 localStorage 恢复
+        async fetchUserInfo() {
+            if (!this.userInfo.userId) {
+                await this.logout();
+                return Promise.reject(new Error("User ID is missing, logging out."));
+            }
+            try {
+                const userInfoData = await getAdminInfoById(this.userInfo.userId);
+                this.userInfo = userInfoData; // 可选：用后端最新数据覆盖本地数据
+            } catch (error) {
+                await this.logout();
+                return Promise.reject(error);
             }
         },
 
@@ -180,40 +232,32 @@ export const adminStore = defineStore('user', {
                 console.error("Failed to delete user:", error);
             }
         },
-        /**
-         * [新增] 封禁用户 Action
-         * @param userId 
-         */
+
         async banUser(userId: number) {
             try {
-                await banUserById(userId); // 调用新的 banUserById API
+                await banUserById(userId);
+
                 ElMessage.success('封禁用户成功！');
-                // 操作成功后，重新获取用户列表以刷新界面
                 await this.fetchUsers();
             } catch (error) {
                 console.error("Failed to ban user:", error);
-                // 错误消息已由 request.ts 中的拦截器统一处理
             }
         },
 
-        /**
-         * [新增] 解封用户 Action
-         * @param userId 
-         */
         async unbanUser(userId: number) {
             try {
-                await unbanUserById(userId); // 调用新的 unbanUserById API
+                await unbanUserById(userId);
                 ElMessage.success('解封用户成功！');
                 await this.fetchUsers();
             } catch (error) {
                 console.error("Failed to unban user:", error);
             }
         },
+
         async resetPassword(userId: number) {
             try {
                 await resetUserPassword(userId);
                 ElMessage.success('重置密码成功！');
-                // 操作成功后，重新获取用户列表以刷新界面
                 await this.fetchUsers();
             } catch (error) {
                 console.error("重置密码失败", error);

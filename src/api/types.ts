@@ -14,6 +14,7 @@ export interface User {
     storageQuotaBytes: number;
     usedStorageBytes: number;
     lastPasswordUpdateTs: string | null;
+    role: string; // 添加 role 字段
 }
 
 /**
